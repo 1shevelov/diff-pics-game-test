@@ -18,6 +18,7 @@ const canvasHeight = isYLimits ? screenHeight : smallerSimensionSize;
 const app = new PIXI.Application({
 	view: document.getElementById("pixi-canvas"),
 	resolution: window.devicePixelRatio || 1,
+    // antialias: true,
 	autoDensity: true,
 	backgroundColor: 0xcccccc,
 	width: canvasWidth,
@@ -29,12 +30,12 @@ else app.view.style.marginTop = app.view.style.marginBottom = `${(screenHeight -
 
 const assetsWorker = new AssetsWorker();
 
-const levelNumber = 1;
+const levelNumber = 5;
 const { meta, textureNames } = await assetsWorker.loadLevelResources(levelNumber);
 console.log(meta);
 
-const level1 = new LevelView(canvasWidth, canvasHeight);
-const levelContainer = level1.make(meta, textureNames);
+const level = new LevelView(canvasWidth, canvasHeight);
+const levelContainer = level.make(levelNumber, meta, textureNames);
 levelContainer.x = app.screen.width / 2;
 levelContainer.y = app.screen.height / 2;
 app.stage.addChild(levelContainer);
