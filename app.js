@@ -1,29 +1,46 @@
-import { Application, Sprite } from "./libs/pixi.mjs";
-import { scaleToWindow } from "./libs/scaleToWindow.js";
+import * as PIXI from "./libs/pixi.mjs";
+import AssetsWorker from "./libs/assetsWorker.js";
+import LevelView from "./libs/levelView.js";
 import * as Debug from "./libs/debugHelpers.js";
 
-const app = new Application({
+const CANVAS_RATIO = { x: 9, y: 16 };
+const screenWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+const screenHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+
+const isYLimits = screenWidth / CANVAS_RATIO.x > screenHeight / CANVAS_RATIO.y;
+const smallerSimensionSize =
+	isYLimits
+		? (screenHeight / CANVAS_RATIO.y) * CANVAS_RATIO.x
+		: (screenWidth / CANVAS_RATIO.x) * CANVAS_RATIO.y;
+const canvasWidth = isYLimits ? smallerSimensionSize : screenWidth;
+const canvasHeight = isYLimits ? screenHeight : smallerSimensionSize;
+
+const app = new PIXI.Application({
 	view: document.getElementById("pixi-canvas"),
 	resolution: window.devicePixelRatio || 1,
 	autoDensity: true,
-	backgroundColor: 0x13c23c,
-	width: 900,
-	height: 1600,
+	backgroundColor: 0xcccccc,
+	width: canvasWidth,
+	height: canvasHeight,
 });
 
-let rendererScale = scaleToWindow(app.renderer.view);
+if (isYLimits) app.view.style.marginLeft = app.view.style.marginRight = `${(screenWidth - canvasWidth) / 2}px`;
+else app.view.style.marginTop = app.view.style.marginBottom = `${(screenHeight - canvasHeight) / 2}px`;
 
-const football = Sprite.from("images/football.png");
+const assetsWorker = new AssetsWorker();
 
-football.anchor.set(0.5);
+const levelNumber = 1;
+const { meta, textureNames } = await assetsWorker.loadLevelResources(levelNumber);
+console.log(meta);
 
-football.x = app.screen.width / 2;
-football.y = app.screen.height / 2;
+const level1 = new LevelView(canvasWidth, canvasHeight);
+const levelContainer = level1.make(meta, textureNames);
+levelContainer.x = app.screen.width / 2;
+levelContainer.y = app.screen.height / 2;
+app.stage.addChild(levelContainer);
 
-app.stage.addChild(football);
-
-window.addEventListener("resize", (_event) => {
-	rendererScale = scaleToWindow(app.renderer.view);
-	// Debug.ViewRendererSize(app.renderer.view);
-	// console.log(`Renderer scale: ${rendererScale}`);
-});
+// window.addEventListener("resize", (_event) => {
+// 	rendererScale = scaleToWindow(app.renderer.view);
+// 	// Debug.ViewRendererSize(app.renderer.view);
+// 	// console.log(`Renderer scale: ${rendererScale}`);
+// });
