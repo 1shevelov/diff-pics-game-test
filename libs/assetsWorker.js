@@ -4,6 +4,8 @@ export default class AssetsWorker {
 	_BASE_URL = "https://hgstudio.ru/jstesttask/levels/";
 
 	_levelTextures = [];
+    _currentLevel = 0;
+    _currentLevelMeta = null;
 
 	constructor() {
 		this._loadFont();
@@ -15,22 +17,20 @@ export default class AssetsWorker {
 	}
 
 	async loadLevelResources(levelNumber) {
+        if (this._currentLevel === levelNumber) return this._currentLevelMeta;
+        else this._currentLevel = levelNumber;
 		// if (this._levelTextures.length > 0)
 		// await this._clearAssets();
 
-		const meta = await Assets.load(this._BASE_URL + levelNumber + "/level.json");
+		this._currentLevelMeta = await Assets.load(this._BASE_URL + levelNumber + "/level.json");
 
-		meta.slots.forEach((item) => {
+		this._currentLevelMeta.slots.forEach((item) => {
 			Assets.add(`${levelNumber}_${item.name}`, this._BASE_URL + levelNumber + "/images/" + item.name + ".jpg");
 			this._levelTextures.push(`${levelNumber}_${item.name}`);
 		});
 
 		await Assets.load(this._levelTextures);
-		console.log(this._levelTextures);
-		this._levelTextures.forEach((item) => {
-			console.log(Assets.cache.has(item));
-		});
-		return { meta: meta, textures: this._levelTextures };
+		return this._currentLevelMeta;
 	}
 
 	async _clearAssets() {
