@@ -8,8 +8,16 @@ export default class LevelView {
 	_baseImageScale = 1;
 	_layerShift = 0;
 
+	_DIFF_TEXT = "Found differences: ";
+	_ERRORS_TEXT = "Errors: ";
+
 	_levelContainer = new PIXI.Container();
-	_titleText;
+	_titleText = null;
+	_diffText = null;
+	_errorsText = null;
+
+	_diffNumber = 0;
+	_errorsNumber = 0;
 
 	_hiddenFragmentsHitAreas = [];
 	_foundFragmentsHitAreas = [];
@@ -59,19 +67,68 @@ export default class LevelView {
 		});
 
 		this._placeTitle(number, 0, layerAZeroPoint.y - this._layerShift * 0.5);
+		this._placeCounters(0.5 * baseLayerB.width, layerBZeroPoint.y + baseLayerB.height + 30);
+		this._diffNumber = meta.slots.length - 1;
+		this._updateCounters();
 		// Debug.DrawMark(this.layerAZero.x, this.layerAZero.y, this._levelContainer);
 		return this._levelContainer;
 	}
 
 	_placeTitle(number, x, y) {
-		this._titleText = new PIXI.Text(
-			`Level ${number}`,
-			new PIXI.TextStyle({ fontFamily: "FilmotypeMajor", fontSize: 30, fontWeight: "bolder" })
-		);
-		this._titleText.anchor.set(0.5);
+		const LEVEL_TEXT = "Level";
+		if (this._titleText === null) {
+			this._titleText = new PIXI.Text(
+				`${LEVEL_TEXT} ${number}`,
+				new PIXI.TextStyle({
+					fontFamily: "FilmotypeMajor",
+					fontSize: 36,
+					fontWeight: "800",
+				})
+			);
+			this._titleText.anchor.set(0.5);
+			this._levelContainer.addChild(this._titleText);
+		} else this._titleText.text = `${LEVEL_TEXT} ${number}`;
+
 		this._titleText.x = x;
 		this._titleText.y = y;
-		this._levelContainer.addChild(this._titleText);
+	}
+
+	_placeCounters(x, y) {
+		if (this._diffText === null) {
+			this._diffText = new PIXI.Text(
+				this._DIFF_TEXT,
+				new PIXI.TextStyle({
+					fontFamily: "FilmotypeMajor",
+					fontSize: 16,
+					fontWeight: "800",
+				})
+			);
+			this._diffText.anchor.set(1);
+			this._levelContainer.addChild(this._diffText);
+		} else this._diffText.text = this._DIFF_TEXT;
+
+		if (this._errorsText === null) {
+			this._errorsText = new PIXI.Text(
+				this._ERRORS_TEXT,
+				new PIXI.TextStyle({
+					fontFamily: "FilmotypeMajor",
+					fontSize: 16,
+					fontWeight: "800",
+				})
+			);
+			this._errorsText.anchor.set(1);
+			this._levelContainer.addChild(this._errorsText);
+		} else this._errorsText.text = this._ERRORS_TEXT;
+
+		this._diffText.x = x;
+		this._diffText.y = y;
+		this._errorsText.x = x;
+		this._errorsText.y = y + 20;
+	}
+
+	_updateCounters() {
+		this._diffText.text = `${this._DIFF_TEXT}${this._foundFragmentsHitAreas.length} / ${this._diffNumber}`;
+		this._errorsText.text = `${this._ERRORS_TEXT}${this._errorsNumber}`;
 	}
 
 	_placeFragment(layerZeroPoint, fragmentSlot) {
@@ -114,8 +171,11 @@ export default class LevelView {
 		if (
 			!this._checkIfHiddenFragmentClicked(localX, localY) &&
 			!this._checkIfFoundFragmentClicked(localX, localY)
-		)
+		) {
 			this._drawMissFrame(localX, localY);
+			this._errorsNumber++;
+		}
+		this._updateCounters();
 	}
 
 	_checkIfHiddenFragmentClicked(x, y) {
