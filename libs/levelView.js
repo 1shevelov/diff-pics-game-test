@@ -1,5 +1,6 @@
 import * as PIXI from "./pixi.mjs";
 import * as Debug from "./debugHelpers.js";
+import * as EVENTS from "./eventManager.js";
 
 export default class LevelView {
 	_GAP = 0.05;
@@ -22,15 +23,19 @@ export default class LevelView {
 	_hiddenFragmentsHitAreas = [];
 	_foundFragmentsHitAreas = [];
 
-	constructor(canvasWidth, canvasHeight) {
+	_eventManager = null;
+
+	constructor(canvasWidth, canvasHeight, appEventManager) {
 		this._canvasSize.x = canvasWidth;
 		this._canvasSize.y = canvasHeight;
+
+		this._eventManager = appEventManager;
 	}
 
-	make(number, meta, textures) {
+	make(levelNumber, meta) {
 		const baseSlot = meta.slots.find((item) => item.layer === "standart");
 
-		const baseLayerA = PIXI.Sprite.from(baseSlot.name);
+		const baseLayerA = PIXI.Sprite.from(`${levelNumber}_${baseSlot.name}`);
 		if (this._canvasSize.x < baseLayerA.width)
 			this._baseImageScale =
 				(this._canvasSize.x * (1 - 2 * this._SIDE_GAP)) / baseLayerA.width;
@@ -44,7 +49,7 @@ export default class LevelView {
 		baseLayerA.on("pointerup", this._onClick, this);
 		this._levelContainer.addChild(baseLayerA);
 
-		const baseLayerB = PIXI.Sprite.from(baseSlot.name);
+		const baseLayerB = PIXI.Sprite.from(`${levelNumber}_${baseSlot.name}`);
 		baseLayerB.anchor.set(0.5);
 		baseLayerB.scale.set(this._baseImageScale);
 		baseLayerB.x = 0;
@@ -62,11 +67,11 @@ export default class LevelView {
 			y: baseLayerB.y - baseLayerB.height / 2,
 		};
 		meta.slots.forEach((item) => {
-			if (item.layer === "LayerA") this._placeFragment(layerAZeroPoint, item);
-			else if (item.layer === "LayerB") this._placeFragment(layerBZeroPoint, item);
+			if (item.layer === "LayerA") this._placeFragment(layerAZeroPoint, levelNumber, item);
+			else if (item.layer === "LayerB") this._placeFragment(layerBZeroPoint, levelNumber, item);
 		});
 
-		this._placeTitle(number, 0, layerAZeroPoint.y - this._layerShift * 0.5);
+		this._placeTitle(levelNumber, 0, layerAZeroPoint.y - this._layerShift * 0.5);
 		this._placeCounters(0.5 * baseLayerB.width, layerBZeroPoint.y + baseLayerB.height + 30);
 		this._diffNumber = meta.slots.length - 1;
 		this._updateCounters();
@@ -74,66 +79,69 @@ export default class LevelView {
 		return this._levelContainer;
 	}
 
-	_placeTitle(number, x, y) {
-		const LEVEL_TEXT = "Level";
-		if (this._titleText === null) {
-			this._titleText = new PIXI.Text(
-				`${LEVEL_TEXT} ${number}`,
-				new PIXI.TextStyle({
-					fontFamily: "FilmotypeMajor",
-					fontSize: 36,
-					fontWeight: "800",
-				})
-			);
-			this._titleText.anchor.set(0.5);
-			this._levelContainer.addChild(this._titleText);
-		} else this._titleText.text = `${LEVEL_TEXT} ${number}`;
+	hide() {
+		this._levelContainer.visible = false;
+		this._eventManager.notify(EVENTS.LevelFinished, null);
+	}
 
+	_placeTitle(levelNumber, x, y) {
+		const LEVEL_TEXT = "Level";
+		this._titleText = new PIXI.Text(
+			`${LEVEL_TEXT} ${levelNumber}`,
+			new PIXI.TextStyle({
+				fontFamily: "FilmotypeMajor",
+				fontSize: 36,
+				fontWeight: "800",
+			})
+		);
+		this._titleText.anchor.set(0.5);
 		this._titleText.x = x;
 		this._titleText.y = y;
+		this._levelContainer.addChild(this._titleText);
 	}
 
 	_placeCounters(x, y) {
-		if (this._diffText === null) {
-			this._diffText = new PIXI.Text(
-				this._DIFF_TEXT,
-				new PIXI.TextStyle({
-					fontFamily: "FilmotypeMajor",
-					fontSize: 16,
-					fontWeight: "800",
-				})
-			);
-			this._diffText.anchor.set(1);
-			this._levelContainer.addChild(this._diffText);
-		} else this._diffText.text = this._DIFF_TEXT;
-
-		if (this._errorsText === null) {
-			this._errorsText = new PIXI.Text(
-				this._ERRORS_TEXT,
-				new PIXI.TextStyle({
-					fontFamily: "FilmotypeMajor",
-					fontSize: 16,
-					fontWeight: "800",
-				})
-			);
-			this._errorsText.anchor.set(1);
-			this._levelContainer.addChild(this._errorsText);
-		} else this._errorsText.text = this._ERRORS_TEXT;
-
+		this._diffText = new PIXI.Text(
+			this._DIFF_TEXT,
+			new PIXI.TextStyle({
+				fontFamily: "FilmotypeMajor",
+				fontSize: 16,
+				fontWeight: "800",
+			})
+		);
+		this._diffText.anchor.set(1);
 		this._diffText.x = x;
 		this._diffText.y = y;
+		this._levelContainer.addChild(this._diffText);
+
+		this._errorsText = new PIXI.Text(
+			this._ERRORS_TEXT,
+			new PIXI.TextStyle({
+				fontFamily: "FilmotypeMajor",
+				fontSize: 16,
+				fontWeight: "800",
+			})
+		);
+		this._errorsText.anchor.set(1);
 		this._errorsText.x = x;
 		this._errorsText.y = y + 20;
+		this._levelContainer.addChild(this._errorsText);
 	}
 
 	_updateCounters() {
 		this._diffText.text = `${this._DIFF_TEXT}${this._foundFragmentsHitAreas.length} / ${this._diffNumber}`;
 		this._errorsText.text = `${this._ERRORS_TEXT}${this._errorsNumber}`;
+
+		if (this._foundFragmentsHitAreas.length === this._diffNumber) {
+			console.log("You win!");
+			setTimeout(() => {
+				this.hide();
+			}, 1000);
+		}
 	}
 
-	_placeFragment(layerZeroPoint, fragmentSlot) {
-		const fragment = PIXI.Sprite.from(fragmentSlot.name);
-		// fragment.anchor.set(0.5);
+	_placeFragment(layerZeroPoint, levelNumber, fragmentSlot) {
+		const fragment = PIXI.Sprite.from(`${levelNumber}_${fragmentSlot.name}`);
 		fragment.scale.set(this._baseImageScale);
 		fragment.x = layerZeroPoint.x + fragmentSlot.x * this._baseImageScale;
 		fragment.y = layerZeroPoint.y + fragmentSlot.y * this._baseImageScale;
@@ -165,7 +173,6 @@ export default class LevelView {
 	}
 
 	_onClick(_event) {
-		// console.log(`missed`);
 		const localX = _event.global.x - this._canvasSize.x / 2;
 		const localY = _event.global.y - this._canvasSize.y / 2;
 		if (
@@ -224,14 +231,6 @@ export default class LevelView {
 		const g = new PIXI.Graphics();
 		g.lineStyle(2, 0x00ff00, 1);
 		g.drawShape(rect);
-		// g.drawRoundedRect(x - SIZE / 2, y - SIZE / 2, SIZE, SIZE, SIZE / 5);
-		// g.lineStyle(SIZE / 7, 0xff0000, 1);
-		// g.moveTo(x - SIZE / 5, y - SIZE / 5);
-		// g.lineTo(x + SIZE / 5, y + SIZE / 5);
-		// g.moveTo(x + SIZE / 5, y - SIZE / 5);
-		// g.lineTo(x - SIZE / 5, y + SIZE / 5);
-		// g.closePath();
-		// this._levelContainer.addChild(g);
 		return g;
 	}
 }
