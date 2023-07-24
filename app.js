@@ -60,7 +60,7 @@ function setMargins() {
 const eventManager = new EVENTS.EventManager();
 const assetsWorker = new AssetsWorker();
 
-let currentLevel = 2;
+let currentLevel = 1;
 
 async function startLevel() {
 	app.stage.removeChildren();
@@ -88,7 +88,6 @@ eventManager.subscribe(EVENTS.LevelFinished, () => {
 });
 
 window.addEventListener("resize", (_event) => {
-	// rendererScale = scaleToWindow(app.renderer.view);
     screenWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     screenHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 	startLevel();
