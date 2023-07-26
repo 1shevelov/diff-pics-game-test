@@ -1,7 +1,7 @@
 import * as PIXI from "./libs/pixi.mjs";
 import AssetsWorker from "./libs/assetsWorker.js";
 import LevelView from "./libs/levelView.js";
-import * as Debug from "./libs/debugHelpers.js";
+// import * as Debug from "./libs/debugHelpers.js";
 import { EventWinScreenClosed, EventManager } from "./libs/eventManager.js";
 import UiView from "./libs/uiView.js";
 
@@ -84,7 +84,7 @@ eventManager.subscribe(EventWinScreenClosed, () => {
 });
 
 // TODO: Resizing resets level progress
-// How to fix: save level state "inprogress" with hidden & found fragments arrays
+// How to fix: save level state "inprogress" with hidden & found fragments arrays, error clicks coordinates array
 // when restarting level, check state and restore hidden & found fragments arrays
 window.addEventListener("resize", (_event) => {
     screenWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);

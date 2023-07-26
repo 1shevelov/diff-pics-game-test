@@ -11,7 +11,7 @@ export default class AssetsWorker {
 	}
 
 	_loadFont() {
-		Assets.add("FilmotypeMajor", "../fonts/Filmotype_Major.otf");
+		Assets.add("FilmotypeMajor", "../fonts/Filmotype_Major.otf"); // remove leading dot in the path if error on load
 		Assets.load("FilmotypeMajor");
 	}
 
@@ -38,14 +38,14 @@ export default class AssetsWorker {
 		return meta;
 	}
 
-	async _clearAssets() {
-		console.log(`Has 1? ${Assets.cache.has("1")}`);
-		await Assets.unload(this._levelTextures);
-		// Assets.cache.reset();
-		// this._levelTextures.forEach((item) => {
-		//     Assets.cache.remove(item);
-		// });
-		console.log(`Has 1? ${Assets.cache.has("1")}`);
-		this._levelTextures = [];
-	}
+	// async _clearAssets() {
+	// 	console.log(`Has 1? ${Assets.cache.has("1")}`);
+	// 	await Assets.unload(this._levelTextures);
+	// 	// Assets.cache.reset();
+	// 	// this._levelTextures.forEach((item) => {
+	// 	//     Assets.cache.remove(item);
+	// 	// });
+	// 	console.log(`Has 1? ${Assets.cache.has("1")}`);
+	// 	this._levelTextures = [];
+	// }
 }
