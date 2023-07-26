@@ -192,6 +192,7 @@ export default class LevelView {
 			!this._checkIfFoundFragmentClicked(localX, localY)
 		) {
 			this._levelContainer.addChild(this._uiView.makeMissFrame(localX, localY));
+			// this._uiView.createHtmlMissFrame(_event.global.x, _event.global.y);
 			this._errorsNumber++;
 		}
 		this._uiView.updateCounters(this._foundFragmentsHitAreas.length, this._errorsNumber);

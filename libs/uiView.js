@@ -16,14 +16,16 @@ export default class UiView {
 
 	_winText = null;
 	_winButton = null;
-    _winButtonText = null;
+	_winButtonText = null;
 	_winScreenContainer = new Container();
 
 	_canvasSize = { x: 0, y: 0 };
 	_levelDiffNumber = 0;
 
-    _appContainer = null;
-    _eventManager = null;
+	_appContainer = null;
+	_eventManager = null;
+
+	_htmlMissFrames = [];
 
 	static instance() {
 		if (!this._instance) {
@@ -35,10 +37,10 @@ export default class UiView {
 
 	_constructor() {}
 
-    init(appContainer, appEventManager) {
-        this._appContainer = appContainer;
-        this._eventManager = appEventManager;
-    }
+	init(appContainer, appEventManager) {
+		this._appContainer = appContainer;
+		this._eventManager = appEventManager;
+	}
 
 	getTitle(levelNumber) {
 		if (!this._titleText) {
@@ -115,6 +117,42 @@ export default class UiView {
 		return g;
 	}
 
+	createHtmlMissFrame(x, y) {
+		const shift = { x: 0, y: 0 };
+		if (this._canvasSize.x > this._canvasSize.y)
+			shift.y = (window.innerHeight - this._canvasSize.y) / 2;
+		else shift.x = (window.innerWidth - this._canvasSize.x) / 2;
+
+		const SIZE = 22;
+		const div = document.createElement("div");
+		div.style.position = "absolute";
+		div.style.left = `${x - SIZE / 2 + shift.x}px`;
+		div.style.top = `${y - SIZE / 2 + shift.y}px`;
+		div.style.width = `${SIZE}px`;
+		div.style.height = `${SIZE}px`;
+		div.style.borderRadius = `${SIZE / 5}px`;
+		div.style.border = `${SIZE / 7}px solid #ff0000`;
+		div.style.boxSizing = "border-box";
+		div.style.backgroundColor = "rgba(255, 0, 0, 0.1)";
+		div.style.zIndex = "100";
+		div.style.pointerEvents = "none";
+		div.style.userSelect = "none";
+		div.style.textAlign = "center";
+		div.style.fontSize = `${SIZE * 0.7}px`;
+		div.style.fontWeight = "800";
+		div.style.color = "#ff0000";
+		div.innerText = "X";
+		document.body.appendChild(div);
+		this._htmlMissFrames.push(div);
+	}
+
+	_clearHtmlMissFrames() {
+		this._htmlMissFrames.forEach((item) => {
+			document.body.removeChild(item);
+		});
+		this._htmlMissFrames = [];
+	}
+
 	makeHitFrame(rect) {
 		const g = new Graphics();
 		g.lineStyle(2, 0x00ff00, 1);
@@ -123,17 +161,20 @@ export default class UiView {
 	}
 
 	showWinScreen() {
-        this._createButton();
+		this._clearHtmlMissFrames();
+		this._createButton();
 		this._winScreenContainer.visible = true;
 	}
 
-    clearButton() {
-        if (this._winButton) {
-            this._winScreenContainer.removeChild(this._winScreenContainer.getChildByName("winButton"));
-            this._winButton.clear();
-            this._winButton = null;
-        }
-    }
+	clearButton() {
+		if (this._winButton) {
+			this._winScreenContainer.removeChild(
+				this._winScreenContainer.getChildByName("winButton")
+			);
+			this._winButton.clear();
+			this._winButton = null;
+		}
+	}
 
 	_createWinScreen() {
 		this._winScreenContainer.x = this._canvasSize.x / 2;
@@ -157,52 +198,52 @@ export default class UiView {
 		}
 		this._winText.text = `${this._titleText.text}\n${this._WIN_TEXT}`;
 
-        this._createButton();
+		this._createButton();
 
-        if (this._winButtonText === null) {
-            this._winButtonText = new Text(
-                this._WIN_BUTTON_TEXT,
-                new TextStyle({
-                    fontFamily: "FilmotypeMajor",
-                    fontSize: 24,
-                    fill: ["#ffffff"],
-                    fontWeight: "800",
-                    align: "center",
-                })
-            );
-            this._winButtonText.anchor.set(0.5);
-            this._winScreenContainer.addChild(this._winButtonText);
+		if (this._winButtonText === null) {
+			this._winButtonText = new Text(
+				this._WIN_BUTTON_TEXT,
+				new TextStyle({
+					fontFamily: "FilmotypeMajor",
+					fontSize: 24,
+					fill: ["#ffffff"],
+					fontWeight: "800",
+					align: "center",
+				})
+			);
+			this._winButtonText.anchor.set(0.5);
+			this._winScreenContainer.addChild(this._winButtonText);
 		}
-        this._winButtonText.x = 0;
-        this._winButtonText.y = this._canvasSize.y * 0.4;
+		this._winButtonText.x = 0;
+		this._winButtonText.y = this._canvasSize.y * 0.4;
 
-        this._winScreenContainer.visible = false;
-        this._appContainer.addChild(this._winScreenContainer);
+		this._winScreenContainer.visible = false;
+		this._appContainer.addChild(this._winScreenContainer);
 	}
 
-    _onNextButtonClick() {
-        this._winScreenContainer.visible = false;
-        this.clearButton();
-        this._eventManager.notify(EventWinScreenClosed, null);
-    }
+	_onNextButtonClick() {
+		this._winScreenContainer.visible = false;
+		this.clearButton();
+		this._eventManager.notify(EventWinScreenClosed, null);
+	}
 
-    _createButton() {
-        this.clearButton();
+	_createButton() {
+		this.clearButton();
 
-        const BUTTON_SIZE = { x: 200, y: 50 };
-        this._winButton = new Graphics();
-        this._winButton.beginFill(0x2e8b57, 1);
-        this._winButton.drawRoundedRect(
-            BUTTON_SIZE.x / -2,
-            BUTTON_SIZE.y / -2 + this._canvasSize.y * 0.4,
-            BUTTON_SIZE.x,
-            BUTTON_SIZE.y,
-            BUTTON_SIZE.x > BUTTON_SIZE.y ? BUTTON_SIZE.y / 5 : BUTTON_SIZE.x / 5
-        );
-        this._winButton.endFill();
-        this._winButton.interactive = true;
-        this._winButton.on("pointerup", this._onNextButtonClick, this);
-        this._winButton.name = "winButton";
-        this._winScreenContainer.addChildAt(this._winButton, 0);
-    }
+		const BUTTON_SIZE = { x: 200, y: 50 };
+		this._winButton = new Graphics();
+		this._winButton.beginFill(0x2e8b57, 1);
+		this._winButton.drawRoundedRect(
+			BUTTON_SIZE.x / -2,
+			BUTTON_SIZE.y / -2 + this._canvasSize.y * 0.4,
+			BUTTON_SIZE.x,
+			BUTTON_SIZE.y,
+			BUTTON_SIZE.x > BUTTON_SIZE.y ? BUTTON_SIZE.y / 5 : BUTTON_SIZE.x / 5
+		);
+		this._winButton.endFill();
+		this._winButton.interactive = true;
+		this._winButton.on("pointerup", this._onNextButtonClick, this);
+		this._winButton.name = "winButton";
+		this._winScreenContainer.addChildAt(this._winButton, 0);
+	}
 }
