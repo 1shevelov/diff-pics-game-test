@@ -83,6 +83,9 @@ eventManager.subscribe(EventWinScreenClosed, () => {
 	startLevel();
 });
 
+// TODO: Resizing resets level progress
+// How to fix: save level state "inprogress" with hidden & found fragments arrays
+// when restarting level, check state and restore hidden & found fragments arrays
 window.addEventListener("resize", (_event) => {
     screenWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     screenHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
