@@ -1,6 +1,6 @@
 import * as PIXI from "./pixi.mjs";
 // import * as Debug from "./debugHelpers.js";
-import * as EVENTS from "./eventManager.js";
+// import { EventLevelFinished } from "./eventManager.js";
 import UiView from "./uiView.js";
 
 export default class LevelView {
@@ -20,7 +20,7 @@ export default class LevelView {
 	_foundFragmentsHitAreas = [];
 
 	_eventManager = null;
-	_uiView = null;
+	_uiView = UiView.instance();
 
 	constructor(canvasWidth, canvasHeight, appEventManager) {
 		this._canvasSize.x = canvasWidth;
@@ -28,12 +28,13 @@ export default class LevelView {
 		this._isOrientationHorz = canvasWidth > canvasHeight;
 
 		this._eventManager = appEventManager;
-		this._uiView = new UiView();
 	}
 
 	create(levelNumber, meta) {
+		this._differencesNumber = meta.slots.length - 1;
+		this._uiView.setLevelData(this._canvasSize, this._differencesNumber);
+		
 		const baseSlot = meta.slots.find((item) => item.layer === "standart");
-
 		// Left/Top image
 		const baseLayerA = PIXI.Sprite.from(`${levelNumber}_${baseSlot.name}`);
 		this._calculateBaseScale(baseLayerA.width, baseLayerA.height);
@@ -94,7 +95,10 @@ export default class LevelView {
 			titlePosition.x = layerAZeroPoint.x - this._layerShift.x;
 			titlePosition.y = layerAZeroPoint.y + baseLayerB.height * 0.25;
 		}
-		this._uiView.placeTitle(levelNumber, titlePosition, this._levelContainer);
+		const titleText = this._uiView.getTitle(levelNumber);
+		titleText.x = titlePosition.x;
+		titleText.y = titlePosition.y;
+		this._levelContainer.addChild(titleText);
 
 		// Counters
 		let countersPosition = { x: 0, y: 0 };
@@ -105,14 +109,18 @@ export default class LevelView {
 			countersPosition.x = layerAZeroPoint.x - 20;
 			countersPosition.y = layerAZeroPoint.y + baseLayerB.height - 30;
 		}
-		this._uiView.placeCounters(countersPosition, this._levelContainer);
-		this._differencesNumber = meta.slots.length - 1;
-		this._uiView.setLevelDiffNumber(this._differencesNumber);
-		this._uiView.updateCounters(
-			this._foundFragmentsHitAreas.length,
-			this._errorsNumber
-		);
+		const [diffCounterText, errorsCounterText] = this._uiView.getCounters();
+		diffCounterText.x = countersPosition.x;
+		diffCounterText.y = countersPosition.y;
+		this._levelContainer.addChild(diffCounterText);
+		errorsCounterText.x = countersPosition.x;
+		errorsCounterText.y = countersPosition.y + 20;
+		this._levelContainer.addChild(errorsCounterText);
 
+		this._uiView.updateCounters(this._foundFragmentsHitAreas.length, this._errorsNumber);
+
+		this._levelContainer.x = this._canvasSize.x / 2;
+		this._levelContainer.y = this._canvasSize.y / 2;
 		return this._levelContainer;
 	}
 
@@ -126,9 +134,11 @@ export default class LevelView {
 		this._baseScale = imageScaleX < imageScaleY ? imageScaleX : imageScaleY;
 	}
 
-	_hide() {
+	_hideAndDelete() {
 		this._levelContainer.visible = false;
-		this._eventManager.notify(EVENTS.LevelFinished, null);
+		this._levelContainer.destroy(); // TODO: check if options.texture destroy all textures
+		// this._eventManager.notify(EventLevelFinished, null);
+		this._uiView.showWinScreen();
 	}
 
 	_placeFragment(layerZeroPoint, levelNumber, fragmentSlot) {
@@ -147,7 +157,7 @@ export default class LevelView {
 		);
 		const fragmentArea = {};
 		fragmentArea.hitArea = fragment.hitArea;
-		fragmentArea.graphics = this._makeHitFrame(fragment.hitArea);
+		fragmentArea.graphics = this._uiView.makeHitFrame(fragment.hitArea);
 
 		let shift = { x: 0, y: 0 }; //2 * this._layerShift;
 		if (this._isOrientationHorz) shift.x = 2 * this._layerShift.x;
@@ -164,16 +174,13 @@ export default class LevelView {
 			fragment.width < fragment.height ? fragment.width / 5 : fragment.height / 5
 		);
 		fragmentArea.mirrorHitArea = fragment.hitArea;
-		fragmentArea.mirrorGraphics = this._makeHitFrame(fragment.hitArea);
+		fragmentArea.mirrorGraphics = this._uiView.makeHitFrame(fragment.hitArea);
 		this._hiddenFragmentsHitAreas.push(fragmentArea);
 	}
 
 	_checkForWin() {
 		if (this._foundFragmentsHitAreas.length === this._differencesNumber) {
-			console.log("You win!");
-			setTimeout(() => {
-				this._hide();
-			}, 1000);
+			this._hideAndDelete();
 		}
 	}
 
@@ -184,13 +191,10 @@ export default class LevelView {
 			!this._checkIfHiddenFragmentClicked(localX, localY) &&
 			!this._checkIfFoundFragmentClicked(localX, localY)
 		) {
-			this._drawMissFrame(localX, localY);
+			this._levelContainer.addChild(this._uiView.makeMissFrame(localX, localY));
 			this._errorsNumber++;
 		}
-		this._uiView.updateCounters(
-			this._foundFragmentsHitAreas.length,
-			this._errorsNumber
-		);
+		this._uiView.updateCounters(this._foundFragmentsHitAreas.length, this._errorsNumber);
 		this._checkForWin();
 	}
 
@@ -218,28 +222,5 @@ export default class LevelView {
 				return true;
 		}
 		return false;
-	}
-
-	_drawMissFrame(x, y) {
-		const SIZE = 22;
-		const g = new PIXI.Graphics();
-		g.lineStyle(2, 0xff0000, 1);
-		g.beginFill(0xff0000, 0.1);
-		g.drawRoundedRect(x - SIZE / 2, y - SIZE / 2, SIZE, SIZE, SIZE / 5);
-		g.endFill();
-		g.lineStyle(SIZE / 7, 0xff0000, 1);
-		g.moveTo(x - SIZE / 5, y - SIZE / 5);
-		g.lineTo(x + SIZE / 5, y + SIZE / 5);
-		g.moveTo(x + SIZE / 5, y - SIZE / 5);
-		g.lineTo(x - SIZE / 5, y + SIZE / 5);
-		g.closePath();
-		this._levelContainer.addChild(g);
-	}
-
-	_makeHitFrame(rect) {
-		const g = new PIXI.Graphics();
-		g.lineStyle(2, 0x00ff00, 1);
-		g.drawShape(rect);
-		return g;
 	}
 }

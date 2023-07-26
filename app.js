@@ -2,7 +2,8 @@ import * as PIXI from "./libs/pixi.mjs";
 import AssetsWorker from "./libs/assetsWorker.js";
 import LevelView from "./libs/levelView.js";
 import * as Debug from "./libs/debugHelpers.js";
-import * as EVENTS from "./libs/eventManager.js";
+import { EventWinScreenClosed, EventManager } from "./libs/eventManager.js";
+import UiView from "./libs/uiView.js";
 
 const CANVAS_HORZ_RATIO = { x: 9, y: 16 };
 const CANVAS_VERT_RATIO = { x: 16, y: 9 };
@@ -49,16 +50,11 @@ function setMargins() {
 			(screenHeight - canvasHeight) / 2
 		}px`;
 	}
-	// console.log(
-	// 	app.view.style.marginLeft,
-	// 	app.view.style.marginRight,
-	// 	app.view.style.marginTop,
-	// 	app.view.style.marginBottom
-	// );
 }
 
-const eventManager = new EVENTS.EventManager();
+const eventManager = new EventManager();
 const assetsWorker = new AssetsWorker();
+UiView.instance().init(app.stage, eventManager);
 
 let currentLevel = 1;
 
@@ -75,15 +71,15 @@ async function startLevel() {
 
 	const level = new LevelView(canvasWidth, canvasHeight, eventManager);
 	const levelContainer = level.create(currentLevel, meta);
-	levelContainer.x = app.screen.width / 2;
-	levelContainer.y = app.screen.height / 2;
 	app.stage.addChild(levelContainer);
 }
 
 startLevel();
 
-eventManager.subscribe(EVENTS.LevelFinished, () => {
-	currentLevel++;
+eventManager.subscribe(EventWinScreenClosed, () => {
+    app.stage.removeChildren();
+    currentLevel++;
+    if (currentLevel === 6) currentLevel = 1;
 	startLevel();
 });
 

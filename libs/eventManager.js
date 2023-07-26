@@ -1,5 +1,5 @@
-export const LevelFinished = "LevelFinished";
-export const Events = [LevelFinished];
+export const EventLevelFinished = "LevelFinished";
+export const EventWinScreenClosed = "WinScreenClosed";
 
 export class EventManager {
 	_listeners = [];
