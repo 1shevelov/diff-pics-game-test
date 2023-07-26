@@ -123,12 +123,19 @@ export default class UiView {
 	}
 
 	showWinScreen() {
+        this._createButton();
 		this._winScreenContainer.visible = true;
-        // this._winButton.clear();
 	}
 
+    clearButton() {
+        if (this._winButton) {
+            this._winScreenContainer.removeChild(this._winScreenContainer.getChildByName("winButton"));
+            this._winButton.clear();
+            this._winButton = null;
+        }
+    }
+
 	_createWinScreen() {
-        // console.log(this);
 		this._winScreenContainer.x = this._canvasSize.x / 2;
 		this._winScreenContainer.y = this._canvasSize.y / 3;
 
@@ -150,26 +157,7 @@ export default class UiView {
 		}
 		this._winText.text = `${this._titleText.text}\n${this._WIN_TEXT}`;
 
-		// draw graphics for next level button
-		// if (this._winButton === null) {
-			const BUTTON_SIZE = { x: 200, y: 50 };
-			this._winButton = new Graphics();
-			this._winButton.beginFill(0x2e8b57, 1);
-			this._winButton.drawRoundedRect(
-				BUTTON_SIZE.x / -2,
-				BUTTON_SIZE.y / -2 + this._canvasSize.y * 0.4,
-				BUTTON_SIZE.x,
-				BUTTON_SIZE.y,
-				BUTTON_SIZE.x > BUTTON_SIZE.y ? BUTTON_SIZE.y / 5 : BUTTON_SIZE.x / 5
-			);
-			this._winButton.endFill();
-			this._winButton.interactive = true;
-			this._winButton.on("pointerup", this._onNextButtonClick, this);
-            // this._winButton.name = "winButton";
-			this._winScreenContainer.addChildAt(this._winButton, 0);
-        // } else {
-        //     this._winButton.y = this._winButton.width.y / -2 + this._canvasSize.y * 0.4;
-        // }
+        this._createButton();
 
         if (this._winButtonText === null) {
             this._winButtonText = new Text(
@@ -183,7 +171,6 @@ export default class UiView {
                 })
             );
             this._winButtonText.anchor.set(0.5);
-            // this._winButton.name = "winButtonText";
             this._winScreenContainer.addChild(this._winButtonText);
 		}
         this._winButtonText.x = 0;
@@ -194,15 +181,28 @@ export default class UiView {
 	}
 
     _onNextButtonClick() {
-        // if (this._winButton !== null) {
-        //     this._winScreenContainer.removeChild("winButton");
-            this._winButton.clear();
-        //     this._winButton.destroy();
-        // }
-        this._winButton = null;
-        // this._winButton.visible = false;
         this._winScreenContainer.visible = false;
-        // this._winScreenContainer.removeChild(this._winScreenContainer.getChildByName("winButton"));
+        this.clearButton();
         this._eventManager.notify(EventWinScreenClosed, null);
+    }
+
+    _createButton() {
+        this.clearButton();
+
+        const BUTTON_SIZE = { x: 200, y: 50 };
+        this._winButton = new Graphics();
+        this._winButton.beginFill(0x2e8b57, 1);
+        this._winButton.drawRoundedRect(
+            BUTTON_SIZE.x / -2,
+            BUTTON_SIZE.y / -2 + this._canvasSize.y * 0.4,
+            BUTTON_SIZE.x,
+            BUTTON_SIZE.y,
+            BUTTON_SIZE.x > BUTTON_SIZE.y ? BUTTON_SIZE.y / 5 : BUTTON_SIZE.x / 5
+        );
+        this._winButton.endFill();
+        this._winButton.interactive = true;
+        this._winButton.on("pointerup", this._onNextButtonClick, this);
+        this._winButton.name = "winButton";
+        this._winScreenContainer.addChildAt(this._winButton, 0);
     }
 }
