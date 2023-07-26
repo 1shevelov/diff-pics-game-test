@@ -12,6 +12,7 @@ Made with Javascript and Pixi.js 7.2
 -   UI fitting to a screen
 -   5 levels with differences and errors counting and highlighting
 -   Playable on mobile and desktop
+-   Miss frames can be drawn with PIXI.Graphics or HTML + CSS (switch levelView.js:194/195)
 
 ### For local install:
 
