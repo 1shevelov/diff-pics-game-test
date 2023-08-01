@@ -1,5 +1,6 @@
 import * as PIXI from "./pixi.mjs";
 // import * as Debug from "./debugHelpers.js";
+import AppView from "./appView.js";
 // import { EventLevelFinished } from "./eventManager.js";
 import UiView from "./uiView.js";
 
@@ -11,37 +12,37 @@ export default class LevelView {
 	_layerShift = { x: 0, y: 0 };
 	_isOrientationHorz = false;
 
+	_appStage;
+	_appView;
 	_levelContainer = new PIXI.Container();
 
-	_differencesNumber = 0;
-	_errorsNumber = 0;
-
 	_hiddenFragmentsHitAreas = [];
-	_foundFragmentsHitAreas = [];
 
-	_eventManager = null;
 	_uiView = UiView.instance();
 
-	constructor(canvasWidth, canvasHeight, appEventManager) {
-		this._canvasSize.x = canvasWidth;
-		this._canvasSize.y = canvasHeight;
-		this._isOrientationHorz = canvasWidth > canvasHeight;
+	constructor() {}
 
-		this._eventManager = appEventManager;
+	init(app) {
+		this._appView = new AppView(app);
+		this._appStage = app.stage;
 	}
 
-	create(levelNumber, meta) {
-		this._differencesNumber = meta.slots.length - 1;
-		this._uiView.setLevelData(this._canvasSize, this._differencesNumber);
-		
+	create(meta, levelNumber) {
 		const baseSlot = meta.slots.find((item) => item.layer === "standart");
+		
+		// set screen orientation
+		this._isOrientationHorz = baseSlot.width > baseSlot.height;
+		this._appView.setScreen(this._isOrientationHorz);
+		this._appView.setMargins();
+		this._canvasSize = this._appView.getCanvasSize();
+
 		// Left/Top image
 		const baseLayerA = PIXI.Sprite.from(`${levelNumber}_${baseSlot.name}`);
 		this._calculateBaseScale(baseLayerA.width, baseLayerA.height);
 		baseLayerA.anchor.set(0.5);
 		baseLayerA.scale.set(this._baseScale);
 
-		if (!this._isOrientationHorz) {
+		if (this._isOrientationHorz) {
 			this._layerShift.y = 0.5 * baseLayerA.height * (1 + this._GAP);
 			baseLayerA.x = 0;
 			baseLayerA.y = -this._layerShift.y;
@@ -58,7 +59,7 @@ export default class LevelView {
 		const baseLayerB = PIXI.Sprite.from(`${levelNumber}_${baseSlot.name}`);
 		baseLayerB.anchor.set(0.5);
 		baseLayerB.scale.set(this._baseScale);
-		if (!this._isOrientationHorz) {
+		if (this._isOrientationHorz) {
 			baseLayerB.x = 0;
 			baseLayerB.y = this._layerShift.y;
 		} else {
@@ -88,14 +89,14 @@ export default class LevelView {
 
 		// Level title
 		let titlePosition = { x: 0, y: 0 };
-		if (!this._isOrientationHorz) {
+		if (this._isOrientationHorz) {
 			titlePosition.x = 0;
 			titlePosition.y = layerAZeroPoint.y - this._layerShift.y * 0.5;
 		} else {
 			titlePosition.x = layerAZeroPoint.x - this._layerShift.x;
 			titlePosition.y = layerAZeroPoint.y + baseLayerB.height * 0.25;
 		}
-		const titleText = this._uiView.getTitle(levelNumber);
+		const titleText = this._uiView.getTitle();
 		titleText.x = titlePosition.x;
 		titleText.y = titlePosition.y;
 		this._levelContainer.addChild(titleText);
@@ -117,11 +118,11 @@ export default class LevelView {
 		errorsCounterText.y = countersPosition.y + 20;
 		this._levelContainer.addChild(errorsCounterText);
 
-		this._uiView.updateCounters(this._foundFragmentsHitAreas.length, this._errorsNumber);
+		// this._uiView.updateCounters(this._foundFragmentsHitAreas.length, this._errorsNumber);
 
 		this._levelContainer.x = this._canvasSize.x / 2;
 		this._levelContainer.y = this._canvasSize.y / 2;
-		return this._levelContainer;
+		this._appStage.addChild(this._levelContainer);
 	}
 
 	_calculateBaseScale(baseWidth, baseHeight) {
@@ -157,7 +158,7 @@ export default class LevelView {
 		);
 		const fragmentArea = {};
 		fragmentArea.hitArea = fragment.hitArea;
-		fragmentArea.graphics = this._uiView.makeHitFrame(fragment.hitArea);
+		// fragmentArea.graphics = this._uiView.makeHitFrame(fragment.hitArea);
 
 		let shift = { x: 0, y: 0 }; //2 * this._layerShift;
 		if (this._isOrientationHorz) shift.x = 2 * this._layerShift.x;
@@ -174,14 +175,8 @@ export default class LevelView {
 			fragment.width < fragment.height ? fragment.width / 5 : fragment.height / 5
 		);
 		fragmentArea.mirrorHitArea = fragment.hitArea;
-		fragmentArea.mirrorGraphics = this._uiView.makeHitFrame(fragment.hitArea);
+		// fragmentArea.mirrorGraphics = this._uiView.makeHitFrame(fragment.hitArea);
 		this._hiddenFragmentsHitAreas.push(fragmentArea);
-	}
-
-	_checkForWin() {
-		if (this._foundFragmentsHitAreas.length === this._differencesNumber) {
-			this._hideAndDelete();
-		}
 	}
 
 	_onClick(_event) {

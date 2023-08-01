@@ -11,6 +11,8 @@ export default class UiView {
 	_WIN_BUTTON_TEXT = "Next level";
 
 	_titleText = null;
+	_levelNumber = 0;
+
 	_diffText = null;
 	_errorsText = null;
 
@@ -42,7 +44,11 @@ export default class UiView {
 		this._eventManager = appEventManager;
 	}
 
-	getTitle(levelNumber) {
+	setLevelNumber(levelNumber) {
+		this._levelNumber = levelNumber;
+	}
+
+	getTitle() {
 		if (!this._titleText) {
 			this._titleText = new Text(
 				"",
@@ -54,9 +60,9 @@ export default class UiView {
 			);
 			this._titleText.anchor.set(0.5);
 		}
-		this._titleText.text = `${this._LEVEL_TEXT} ${levelNumber}`;
+		this._titleText.text = `${this._LEVEL_TEXT} ${this._levelNumber}`;
 
-		this._createWinScreen();
+		// this._createWinScreen();
 
 		return this._titleText;
 	}

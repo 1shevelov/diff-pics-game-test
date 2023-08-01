@@ -1,8 +1,29 @@
-import { Sprite, Graphics } from "./pixi.mjs";
+import { Sprite, Graphics, Text } from "./pixi.mjs";
 
 // gets PIXI.ICanvas as input
 export function ViewRendererSize(canvas) {
 	console.log(`Renderer size: ${canvas.width} x ${canvas.height}`);
+}
+
+export function putValuesOnScreen(app, values) {
+    const posX = 100;
+    const startingPosY = 100;
+    const stepY = 50;
+    let textLabel;
+    values.forEach((item, index) => {
+        textLabel = new Text(item, {
+            fontFamily: "Arial",
+            fontSize: 24,
+            fill: 0xffffff,
+            align: "center",
+            dropShadow: true,
+            dropShadowDistance: 1,
+            dropShadowBlur: 1,
+        });
+        textLabel.x = posX;
+        textLabel.y = startingPosY + stepY * index;
+        app.stage.addChild(textLabel);
+    });
 }
 
 // gets PIXI.Application as input
